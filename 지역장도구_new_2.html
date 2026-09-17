@@ -1,0 +1,1944 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>매장 재고 요청 · 경남지역</title>
+<link rel="preconnect" href="https://cdn.jsdelivr.net">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+  :root{
+    --bg:#F5F4F0;
+    --surface:#FFFFFF;
+    --ink:#1C2422;
+    --sub:#6B6F6A;
+    --line:#DEDAD1;
+    --teal:#0E4C55;
+    --teal-dim:#E4EDEC;
+    --amber:#DE9A34;
+    --amber-dim:#FBEFDA;
+    --danger:#B4472F;
+    --khaki:#E9E4D3;
+    --khaki-line:#D6CEAF;
+    --radius:10px;
+    font-size:16px;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--ink);
+    font-family:'Pretendard', -apple-system, BlinkMacSystemFont, "Malgun Gothic", sans-serif;
+    -webkit-font-smoothing:antialiased;
+    padding-bottom:80px;
+  }
+  ::selection{ background:var(--amber-dim); }
+  .tabular{ font-variant-numeric: tabular-nums; }
+
+  /* ---- Header ---- */
+  header.top{ background:var(--teal); color:#F3F1EA; padding:22px 24px 20px; }
+  header.top .wrap{ max-width:1180px; margin:0 auto; display:flex; align-items:flex-end; justify-content:space-between; gap:24px; flex-wrap:wrap;}
+  header.top h1{ font-size:22px; margin:0 0 4px; letter-spacing:-0.01em; font-weight:700;}
+  header.top p{ margin:0; font-size:13.5px; color:#BFD3D1; }
+  .store-select{ display:flex; align-items:center; gap:10px; }
+  .store-select label{ font-size:12.5px; color:#BFD3D1; }
+  .store-select select{
+    font-family:inherit; font-size:15px; font-weight:600; padding:9px 14px;
+    border-radius:8px; border:1px solid #2C6B72; background:#0B3A41; color:#fff;
+    min-width:180px; cursor:pointer;
+  }
+  .store-select select:disabled{ opacity:.5; cursor:not-allowed; }
+  .ledger-export-btn{
+    font-family:inherit; font-size:12.5px; font-weight:600; padding:9px 14px;
+    border-radius:8px; border:1px solid #2C6B72; background:transparent; color:#BFD3D1;
+    cursor:pointer; white-space:nowrap;
+  }
+  .ledger-export-btn:hover{ background:#0B3A41; color:#fff; }
+
+  /* ---- Upload strip ---- */
+  section.upload{ max-width:1180px; margin:18px auto 0; padding:0 24px; }
+  .upload-grid{ display:grid; grid-template-columns:repeat(4, 1fr); gap:12px; }
+  .up-card{ background:var(--surface); border:1px solid var(--line); border-radius:var(--radius); padding:14px 16px; position:relative; }
+  .up-card .tag{ font-size:11px; font-weight:700; color:var(--teal); letter-spacing:.02em;}
+  .up-card .req{ color:var(--danger); }
+  .up-card h3{ font-size:13.5px; margin:4px 0 2px; }
+  .up-card p.desc{ font-size:11.5px; color:var(--sub); margin:0 0 10px; line-height:1.5;}
+  .up-card input[type=file]{ font-size:11.5px; width:100%; }
+  .up-card .status{ margin-top:8px; font-size:12px; color:var(--sub); display:flex; align-items:center; gap:6px;}
+  .status-row{ display:flex; align-items:center; justify-content:space-between; gap:8px; }
+  .clear-btn{
+    margin-top:8px; font-size:11.5px; color:var(--danger); background:none; border:none;
+    cursor:pointer; padding:2px 4px; font-family:inherit; text-decoration:underline; white-space:nowrap;
+  }
+  .up-card .status.ok{ color:#1F7A4C; font-weight:600; }
+  .dot{ width:7px; height:7px; border-radius:50%; background:var(--line); display:inline-block;}
+  .dot.ok{ background:#1F7A4C; }
+
+  .notice{ max-width:1180px; margin:14px auto 0; padding:0 24px; font-size:12px; color:var(--sub); line-height:1.7; }
+  .notice details summary{ cursor:pointer; color:var(--teal); font-weight:600; font-size:12.5px;}
+  .notice ul{ margin:8px 0 0; padding-left:18px; }
+
+  /* ---- Criteria panel ---- */
+  section.criteria{ max-width:1180px; margin:16px auto 0; padding:0 24px; }
+  .criteria-head{ display:flex; align-items:center; justify-content:space-between; margin-bottom:8px; }
+  .criteria-head h2{ font-size:14px; margin:0; }
+  .criteria-head .reset-btn{ background:none; border:1px solid var(--line); border-radius:7px; padding:6px 12px; font-size:12px; cursor:pointer; color:var(--sub); font-family:inherit;}
+  .crit-row{ display:flex; gap:10px; flex-wrap:wrap; }
+  .crit-card{ flex:1 1 190px; background:var(--khaki); border:1px solid var(--khaki-line); border-radius:8px; padding:12px 14px; }
+  .crit-title{ font-size:12px; font-weight:700; color:#5B5330; margin-bottom:9px; line-height:1.35; min-height:32px; }
+  .crit-controls{ display:flex; align-items:center; gap:6px; }
+  .crit-controls input[type=number]{
+    width:64px; padding:7px 8px; border-radius:6px; border:1px solid var(--khaki-line);
+    font-size:14px; font-family:inherit; background:#fff;
+  }
+  .crit-controls .crit-unit{ font-size:12.5px; color:#5B5330; }
+  .crit-controls select{
+    padding:7px 6px; border-radius:6px; border:1px solid var(--khaki-line); font-size:12.5px;
+    background:#fff; font-family:inherit; flex:1;
+  }
+  .crit-note{ font-size:10.5px; color:#8A7F4E; margin-top:6px; min-height:13px; }
+  .crit-hint{ font-size:11.5px; color:var(--sub); margin-top:8px; }
+
+  /* ---- Filter bar ---- */
+  section.filters{ position:sticky; top:0; z-index:20; background:var(--bg); border-bottom:1px solid var(--line); padding:14px 24px; margin-top:18px; }
+  .filters .wrap{ max-width:1180px; margin:0 auto; display:flex; gap:10px; flex-wrap:wrap; align-items:center;}
+  .filters input[type=text]{ flex:1 1 220px; padding:10px 14px; border-radius:8px; border:1px solid var(--line); font-size:14px; background:var(--surface); font-family:inherit; }
+  .filters select{ padding:10px 12px; border-radius:8px; border:1px solid var(--line); font-size:13.5px; background:var(--surface); font-family:inherit; color:var(--ink); }
+  .chk{ display:flex; align-items:center; gap:6px; font-size:13px; color:var(--sub); user-select:none; }
+  .result-count{ font-size:12.5px; color:var(--sub); margin-left:auto; }
+  .density-ctrl{ display:flex; align-items:center; gap:8px; }
+  .density-label{ font-size:12px; color:var(--sub); white-space:nowrap; }
+  .density-ctrl input[type=range]{
+    width:90px; accent-color:var(--teal); cursor:pointer;
+  }
+
+  /* ---- Multi-select (checkbox dropdown) ---- */
+  .multiselect{ position:relative; }
+  .ms-btn{
+    padding:10px 30px 10px 12px; border-radius:8px; border:1px solid var(--line);
+    font-size:13.5px; background:var(--surface) url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="10" height="6"><path d="M0 0l5 6 5-6z" fill="%236B6F6A"/></svg>') no-repeat right 12px center;
+    font-family:inherit; color:var(--ink); cursor:pointer; max-width:160px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+  }
+  .ms-btn:disabled{ opacity:.5; cursor:not-allowed; }
+  .ms-btn.active-filter{ border-color:var(--teal); color:var(--teal); font-weight:700; }
+  .ms-panel{
+    display:none; position:absolute; top:calc(100% + 6px); left:0; z-index:30;
+    background:var(--surface); border:1px solid var(--line); border-radius:8px;
+    box-shadow:0 8px 20px rgba(0,0,0,.1); min-width:220px; max-height:320px;
+    padding:6px; flex-direction:column;
+  }
+  .multiselect.open .ms-panel{ display:flex; }
+  .ms-search{
+    width:100%; padding:7px 9px; margin-bottom:6px; border:1px solid var(--line); border-radius:6px;
+    font-size:12.5px; font-family:inherit; box-sizing:border-box; flex:0 0 auto;
+  }
+  .ms-options{ overflow-y:auto; flex:1 1 auto; min-height:0; }
+  .ms-option{ display:flex; align-items:center; gap:8px; padding:7px 8px; font-size:13px; border-radius:6px; cursor:pointer; }
+  .ms-option:hover{ background:var(--bg); }
+  .ms-option input{ pointer-events:none; }
+  .ms-empty{ padding:10px 8px; font-size:12.5px; color:var(--sub); }
+  .ms-clear{ display:block; width:100%; text-align:left; padding:7px 8px; font-size:12px; color:var(--teal); background:none; border:none; border-top:1px solid var(--line); margin-top:4px; cursor:pointer; font-family:inherit; flex:0 0 auto; }
+
+  /* ---- List ---- */
+  main{ max-width:1180px; margin:0 auto; padding:20px 24px 40px; }
+  .empty-state{ text-align:center; padding:70px 20px; color:var(--sub); font-size:14px; line-height:1.8; }
+  .empty-state b{ color:var(--ink); }
+
+  .list{ background:var(--surface); border:1px solid var(--line); border-radius:var(--radius); overflow:hidden; }
+  .list-head{
+    display:grid; grid-template-columns:110px 1fr 85px 85px 55px 70px 90px 90px 18px;
+    gap:var(--row-gap, 10px); padding:10px var(--row-pad-x, 18px); background:var(--bg); border-bottom:1px solid var(--line);
+    font-size:11px; font-weight:700; color:var(--sub);
+  }
+  .list-head span:not(:first-child):not(:nth-child(2)){ text-align:right; }
+  .list-head span.sortable{ cursor:pointer; user-select:none; }
+  .list-head span.sortable:hover{ color:var(--teal); }
+  .list-head span.sortable .arrow-ind{ display:inline-block; margin-left:2px; opacity:.4; font-size:9px; }
+  .list-head span.sortable.active{ color:var(--teal); }
+  .list-head span.sortable.active .arrow-ind{ opacity:1; }
+
+  .row{
+    display:grid; grid-template-columns:110px 1fr 85px 85px 55px 70px 90px 90px 18px;
+    gap:var(--row-gap, 10px); align-items:center; padding:var(--row-pad-y, 13px) var(--row-pad-x, 18px); cursor:pointer;
+    border-bottom:1px solid #F0EEE8; transition:background .1s ease;
+  }
+  .item:last-child .row{ border-bottom:none; }
+  .row:hover{ background:#FAFAF8; }
+  .row.open{ background:var(--teal-dim); cursor:default; }
+  .row .brand{ font-size:11.5px; font-weight:700; color:var(--teal); letter-spacing:.02em; line-height:1.35; }
+  .row .col-name{ min-width:0; }
+  .row .pname{ font-size:14px; font-weight:700; line-height:1.3; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .cart-badge{
+    display:inline-block; background:var(--teal-dim); color:var(--teal); font-size:10.5px; font-weight:700;
+    padding:1px 7px; border-radius:10px; margin-left:6px; vertical-align:1px;
+  }
+  .row .style-color{ font-size:11.5px; color:var(--sub); margin-top:1px; }
+  .row .col-normal{ text-align:right; font-size:12px; color:var(--sub); }
+  .row .col-normal.has-discount{ text-decoration:line-through; }
+  .row .col-sell{ text-align:right; font-size:13.5px; font-weight:700; }
+  .row .col-disc{ text-align:right; font-size:12px; font-weight:500; color:var(--sub); }
+  .row .col-disc.has-discount{ font-weight:700; color:var(--danger); }
+  .row .col-stat{ text-align:right; font-size:12.5px; color:var(--ink); font-weight:700; }
+  .row .col-stat small{ display:block; font-size:10px; color:var(--sub); font-weight:400; }
+  .row .arrow{ text-align:center; color:var(--sub); font-size:13px; transition:transform .12s ease; }
+  .row.open .arrow{ transform:rotate(90deg); color:var(--teal); }
+
+  .price-row{ display:none; } /* legacy, unused with row layout */
+  .stat-row{ display:none; }
+  .card-foot{ display:none; }
+
+  .panel{ padding:14px 18px 18px; border-top:1px dashed var(--line); background:#FCFCFA; }
+  .panel .hint{ font-size:12px; color:var(--sub); margin-bottom:12px; }
+  .my-store-ref{
+    background:var(--teal-dim); border:1px solid #C7DBDA; border-radius:8px;
+    padding:12px 14px; margin-bottom:14px;
+  }
+  .my-store-head{ font-size:13px; font-weight:600; margin-bottom:8px; color:var(--ink); }
+  .my-store-tag{
+    display:inline-block; background:var(--teal); color:#fff; font-size:10.5px; font-weight:700;
+    padding:2px 7px; border-radius:5px; margin-right:6px; vertical-align:1px;
+  }
+  .my-store-sales{ float:right; font-size:12px; color:var(--sub); font-weight:400; }
+  .my-store-sales b{ color:var(--ink); font-weight:700; }
+  .size-chip.ref-chip{ cursor:default; background:#fff; border-color:#C7DBDA; }
+  .size-chip.ref-chip:hover{ border-color:#C7DBDA; }
+  .size-chip.ref-chip.zero-chip{ background:#FBE9E3; border-color:#EFC1B0; }
+  .size-chip.ref-chip.zero-chip .sz{ color:#B4472F; }
+  .size-chip.ref-chip.zero-chip .qty{ color:#B4472F; }
+  .store-row{ display:flex; align-items:flex-start; gap:14px; padding:9px 0; border-bottom:1px solid #F0EEE8;}
+  .store-row:last-child{ border-bottom:none; }
+  .store-row .sname{ width:150px; flex:0 0 150px; font-size:13px; font-weight:600; padding-top:6px;}
+  .store-row .stotal{ display:block; font-size:11px; color:var(--sub); font-weight:400; margin-top:1px;}
+  .store-row .stotal i{ font-style:normal; color:#9A9488; }
+  .sizes{ display:flex; flex-wrap:wrap; gap:6px; clear:both; }
+  .size-chip{ position:relative; border:1px solid var(--line); background:var(--bg); border-radius:7px; padding:6px 10px; font-size:12.5px; cursor:pointer; line-height:1.2; text-align:center; min-width:50px; }
+  .size-chip .sz{ font-weight:700; display:block; }
+  .size-chip .qty{ display:block; font-size:11px; color:var(--sub); margin-top:1px; }
+  .size-chip:hover{ border-color:var(--teal); }
+  .size-chip.selected{ background:var(--amber); border-color:var(--amber); color:#3A2A0E; font-weight:700; box-shadow:0 0 0 2px rgba(222,154,52,.35); }
+  .size-chip.selected .qty{ color:#3A2A0E; }
+  .chip-check{
+    position:absolute; top:-7px; right:-7px; width:16px; height:16px; border-radius:50%;
+    background:var(--teal); color:#fff; font-size:10px; font-weight:700; line-height:16px;
+    box-shadow:0 0 0 2px #fff;
+  }
+  .close-panel{ margin-top:14px; background:none; border:1px solid var(--line); border-radius:7px; padding:7px 14px; font-size:12.5px; cursor:pointer; color:var(--sub); font-family:inherit;}
+
+  .more-btn{ display:block; margin:22px auto 0; padding:10px 22px; border-radius:8px; border:1px solid var(--line); background:var(--surface); font-size:13.5px; cursor:pointer; font-family:inherit;}
+
+  .cart-fab{ position:fixed; right:22px; bottom:22px; z-index:40; background:var(--teal); color:#fff; border:none; border-radius:30px; padding:14px 20px; font-size:14px; font-weight:700; cursor:pointer; box-shadow:0 6px 18px rgba(14,76,85,.35); display:flex; align-items:center; gap:8px; font-family:inherit; }
+  .cart-fab .badge{ background:var(--amber); color:#3A2A0E; border-radius:12px; padding:1px 8px; font-size:12.5px;}
+
+  .drawer-backdrop{ position:fixed; inset:0; background:rgba(20,24,22,.35); z-index:50; display:none;}
+  .drawer-backdrop.show{ display:block; }
+  .drawer{ position:fixed; top:0; right:-420px; width:400px; max-width:92vw; height:100%; background:var(--surface); z-index:51; transition:right .18s ease; display:flex; flex-direction:column; box-shadow:-8px 0 24px rgba(0,0,0,.12); }
+  .drawer.show{ right:0; }
+  .drawer-head{ padding:18px 20px; border-bottom:1px solid var(--line); display:flex; justify-content:space-between; align-items:center;}
+  .drawer-head h2{ font-size:16px; margin:0; }
+  .drawer-head button{ background:none; border:none; font-size:20px; cursor:pointer; color:var(--sub); line-height:1;}
+  .drawer-body{ flex:1; overflow-y:auto; padding:8px 20px; }
+  .cart-empty{ text-align:center; color:var(--sub); font-size:13px; padding:60px 10px; }
+  .cart-group{ margin:14px 0; }
+  .cart-group .g-title{ font-size:12px; font-weight:700; color:var(--teal); margin-bottom:6px; display:flex; align-items:center; gap:6px;}
+  .cart-item{ display:flex; align-items:center; gap:10px; padding:9px 0; border-bottom:1px solid #F0EEE8;}
+  .cart-item .ci-info{ flex:1; min-width:0; }
+  .cart-item .ci-name{ font-size:13px; font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .cart-item .ci-sub{ font-size:11.5px; color:var(--sub); }
+  .stepper{ display:flex; align-items:center; border:1px solid var(--line); border-radius:6px; overflow:hidden;}
+  .stepper button{ background:var(--bg); border:none; width:24px; height:24px; cursor:pointer; font-size:13px; font-family:inherit;}
+  .stepper span{ width:26px; text-align:center; font-size:12.5px; font-weight:700; }
+  .ci-remove{ background:none; border:none; color:var(--sub); cursor:pointer; font-size:16px; padding:0 2px;}
+  .drawer-foot{ padding:16px 20px; border-top:1px solid var(--line); display:flex; gap:8px; }
+  .btn-primary{ flex:1; background:var(--teal); color:#fff; border:none; border-radius:8px; padding:12px; font-size:14.5px; font-weight:700; cursor:pointer; font-family:inherit;}
+  .btn-primary:disabled{ opacity:.4; cursor:not-allowed; }
+  .btn-ghost{ background:none; border:1px solid var(--line); color:var(--sub); border-radius:8px; padding:12px 14px; font-size:13px; cursor:pointer; font-family:inherit;}
+
+  .req-banner{ max-width:1180px; margin:16px auto 0; padding:12px 18px; background:var(--amber-dim); border:1px solid #EFD6A6; border-radius:8px; font-size:13px; color:#6B4A10; }
+
+  @media (max-width:900px){
+    .upload-grid{ grid-template-columns:repeat(2,1fr); }
+    .list-head, .row{ grid-template-columns:1fr 80px 55px 70px 18px; }
+    .list-head .h-brand, .list-head .h-normal, .list-head .h-other, .list-head .h-wh,
+    .row .brand, .row .col-normal, .row .col-stat.other, .row .col-stat.wh{ display:none; }
+  }
+  @media (max-width:680px){
+    .upload-grid{ grid-template-columns:1fr; }
+    .store-row{ flex-direction:column; }
+    .store-row .sname{ width:auto; }
+    header.top .wrap{ flex-direction:column; align-items:flex-start;}
+    .crit-card{ flex:1 1 45%; }
+  }
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="wrap">
+    <div>
+      <h1>매장 재고 요청</h1>
+      <p>경남지역 매장 간 상품 확인 &amp; 점간이동 요청 리스트 작성</p>
+    </div>
+    <div class="store-select">
+      <label>내 매장 (요청 매장)</label>
+      <select id="requestStore" disabled>
+        <option value="">① 파일 업로드 후 선택</option>
+      </select>
+    </div>
+    <button type="button" class="ledger-export-btn" id="exportLedgerBtn" title="지역장 전용 — 구글시트 '재고원장' 탭에 붙여넣을 전체 재고 데이터를 내려받습니다">재고원장 내보내기</button>
+  </div>
+</header>
+
+<section class="upload">
+  <div class="upload-grid">
+    <div class="up-card">
+      <div class="tag">① 매장 재고 <span class="req">필수</span></div>
+      <h3>스타일별 입출고실적조회(매장)</h3>
+      <p class="desc">점/창고구분: <b>점</b> · 전체매장 · 사이즈별. 매장별·사이즈별 현재재고와 정상가.</p>
+      <input type="file" id="fileStock" accept=".xlsx,.xls" multiple>
+      <div class="status-row">
+        <div class="status" id="statusStock"><span class="dot"></span>대기 중</div>
+        <button type="button" class="clear-btn" id="clearStock" hidden>초기화</button>
+      </div>
+    </div>
+    <div class="up-card">
+      <div class="tag">② 창고 재고 <span style="color:var(--sub); font-weight:500;">선택</span></div>
+      <h3>스타일별 입출고실적조회(창고)</h3>
+      <p class="desc">점/창고구분: <b>창고</b> · 사이즈별. 사이즈별 창고재고.</p>
+      <input type="file" id="fileWarehouse" accept=".xlsx,.xls" multiple>
+      <div class="status-row">
+        <div class="status" id="statusWarehouse"><span class="dot"></span>미업로드</div>
+        <button type="button" class="clear-btn" id="clearWarehouse" hidden>초기화</button>
+      </div>
+    </div>
+    <div class="up-card">
+      <div class="tag">③ Best 상품판매분석 <span style="color:var(--sub); font-weight:500;">선택</span></div>
+      <h3>Best 상품판매분석</h3>
+      <p class="desc">판매수량·판매가·감가율·중/소분류. <b>여기 있는 상품은 이미 잘 팔리는 상품이므로 요청 목록에서 자동 제외됩니다.</b></p>
+      <input type="file" id="fileBest" accept=".xlsx,.xls" multiple>
+      <div class="status-row">
+        <div class="status" id="statusBest"><span class="dot"></span>미업로드</div>
+        <button type="button" class="clear-btn" id="clearBest" hidden>초기화</button>
+      </div>
+    </div>
+    <div class="up-card">
+      <div class="tag">④ Shoe Card <span style="color:var(--sub); font-weight:500;">선택</span></div>
+      <h3>Shoe Card 출력</h3>
+      <p class="desc">매장 진열가 스냅샷. 정상가·판매가·감가율의 기준으로 우선 사용됩니다.</p>
+      <input type="file" id="fileShoeCard" accept=".xlsx,.xls" multiple>
+      <div class="status-row">
+        <div class="status" id="statusShoeCard"><span class="dot"></span>미업로드</div>
+        <button type="button" class="clear-btn" id="clearShoeCard" hidden>초기화</button>
+      </div>
+    </div>
+    <div class="up-card">
+      <div class="tag">⑤ 판매현황상세 <span style="color:var(--sub); font-weight:500;">선택</span></div>
+      <h3>스타일별 판매현황상세</h3>
+      <p class="desc">매장·사이즈별 판매수량과 대/중/소분류를 함께 제공합니다.</p>
+      <input type="file" id="fileDetail" accept=".xlsx,.xls" multiple>
+      <div class="status-row">
+        <div class="status" id="statusDetail"><span class="dot"></span>미업로드</div>
+        <button type="button" class="clear-btn" id="clearDetail" hidden>초기화</button>
+      </div>
+    </div>
+    <div class="up-card">
+      <div class="tag">⑥ 최종입고일 · 분류 <span style="color:var(--sub); font-weight:500;">선택</span></div>
+      <h3>사이즈별 현재고 조회</h3>
+      <p class="desc">최종입고일 경과 기준, 대/중/소분류 필터에 사용됩니다.</p>
+      <input type="file" id="fileInfo" accept=".xlsx,.xls" multiple>
+      <div class="status-row">
+        <div class="status" id="statusInfo"><span class="dot"></span>미업로드</div>
+        <button type="button" class="clear-btn" id="clearInfo" hidden>초기화</button>
+      </div>
+    </div>
+  </div>
+  <div class="crit-hint" style="margin-top:8px;">같은 슬롯에 파일을 다시 선택하면 이전 데이터를 지우고 새로 올린 파일로 <b>교체</b>됩니다(같은 파일을 다시 골라도 항상 반영됩니다). 여러 파일을 한 슬롯에 함께 반영하려면 파일 선택 창에서 <b>여러 개를 한 번에 선택</b>하세요. "초기화" 버튼은 그 슬롯만 비웁니다.</div>
+
+  <div class="notice">
+    <details>
+      <summary>사용 방법 &amp; 안내 (펼치기)</summary>
+      <ul>
+        <li>①번 파일만 있어도 동작합니다. ②~⑥번은 업로드한 만큼만 반영되고, 없는 파일과 관련된 기준·필터는 자동으로 건너뜁니다.</li>
+        <li>상단에서 <b>내 매장</b>을 먼저 선택하세요. 내 매장의 재고는 상대 매장 목록에서 제외됩니다.</li>
+        <li>상품 카드를 클릭하면 상대 매장별 사이즈·재고가 펼쳐집니다. 원하는 사이즈를 클릭하면 요청 목록에 담깁니다.</li>
+        <li>정상가·판매가·감가율은 <b>Shoe Card</b>(매장 진열가)가 있으면 그 값을 우선 사용하고, 없는 상품만 Best 상품판매분석/판매현황상세로 계산한 평균 판매가로 대신합니다.</li>
+        <li>판매수량은 <b>스타일별 판매현황상세</b>(⑤번) 파일이 있어야 "내 매장(요청 매장)"의 실제 판매수량으로 계산됩니다(매장을 바꾸면 값도 같이 바뀝니다). 이 파일이 없으면 판매수량은 빈 값("-")으로 표시되고, 요청 기준 ⑤번도 적용되지 않습니다.</li>
+        <li>대분류는 회사 분류표(대/중/소분류 매핑) 기준으로 중분류 값에서 자동으로 채워지며, 스타일별 판매현황상세나 ⑥번 파일에 대분류가 직접 있으면 그 값을 우선합니다. 다만 <b>Best 상품판매분석에서만 얻어지는 분류 정보는 그 상품 자체가 목록에서 제외되므로 화면에 노출되지 않습니다</b> — 분류가 필요하면 스타일별 판매현황상세나 ⑥번 파일을 함께 올려주세요.</li>
+        <li>브랜드·대분류·중분류·소분류는 여러 개를 동시에 선택할 수 있습니다(체크박스 다중 선택).</li>
+        <li><b>Best 상품판매분석 파일(③번)에 있는 상품(스타일+컬러)은 이미 잘 팔리는 상품이라 요청 목록에 아예 표시되지 않습니다.</b> Shoe Card(④번) 파일은 가격 정보만 제공할 뿐 제외 대상이 아닙니다.</li>
+        <li>같은 상품이 ③(Best)·④(Shoe Card)·⑤(판매현황상세) 파일에 동시에 나와도 서로 값을 덮어쓰지 않습니다 — 가격은 Shoe Card를 우선 사용하고, 판매수량·분류는 Best와 판매현황상세 중 판매수량이 더 큰 쪽을 사용합니다.</li>
+        <li>요청 기준 ⑥(최종입고일 경과)은 ⑥번 파일이 있어야 계산되며, 해당 상품의 값이 없으면 그 기준은 건너뛰고 통과시킵니다(결과를 임의로 숨기지 않습니다).</li>
+        <li>요청 기준 ②(창고재고)·③(내 매장 재고)는 사이즈 단위로 적용되어, 조건에 맞지 않는 사이즈만 목록에서 제외됩니다.</li>
+        <li>사이즈 표기(예: '080'과 '80')는 원본 파일 그대로 표시됩니다. 파일 간 표기가 다르면 다른 사이즈로 인식될 수 있으니 확인 후 요청하세요.</li>
+        <li>모든 계산은 브라우저 안에서만 이루어지며, 업로드한 파일은 서버로 전송되지 않습니다.</li>
+      </ul>
+    </details>
+  </div>
+</section>
+
+<section class="criteria">
+  <div class="criteria-head">
+    <h2>요청 기준 (숫자를 입력한 항목만 적용됩니다)</h2>
+    <button class="reset-btn" id="resetCriteria">기준 초기화</button>
+  </div>
+  <div class="crit-row">
+    <div class="crit-card">
+      <div class="crit-title">① 경남지역 매장별 재고</div>
+      <div class="crit-controls">
+        <input type="number" id="c2val" min="0" value="1">
+        <span class="crit-unit">족</span>
+        <select id="c2op"><option selected>이상</option><option>초과</option><option>이하</option><option>미만</option></select>
+      </div>
+      <div class="crit-note" id="c2note"></div>
+    </div>
+    <div class="crit-card">
+      <div class="crit-title">② 물류 재고(사이즈별)</div>
+      <div class="crit-controls">
+        <input type="number" id="c3val" min="0" value="30">
+        <span class="crit-unit">족</span>
+        <select id="c3op"><option>이상</option><option>초과</option><option selected>이하</option><option>미만</option></select>
+      </div>
+      <div class="crit-note" id="c3note"></div>
+    </div>
+    <div class="crit-card">
+      <div class="crit-title">③ 내 매장 재고(사이즈별)</div>
+      <div class="crit-controls">
+        <input type="number" id="c4val" min="0" value="3">
+        <span class="crit-unit">족</span>
+        <select id="c4op"><option>이상</option><option>초과</option><option>이하</option><option selected>미만</option></select>
+      </div>
+      <div class="crit-note" id="c4note"></div>
+    </div>
+  </div>
+  <div class="crit-row" style="margin-top:10px;">
+    <div class="crit-card">
+      <div class="crit-title">④ 감가율</div>
+      <div class="crit-controls">
+        <input type="number" id="c5val" min="0" value="20">
+        <span class="crit-unit">%</span>
+        <select id="c5op"><option selected>이하</option><option>미만</option><option>이상</option><option>초과</option></select>
+      </div>
+      <div class="crit-note" id="c5note"></div>
+    </div>
+    <div class="crit-card">
+      <div class="crit-title">⑤ 내 매장 판매수량</div>
+      <div class="crit-controls">
+        <input type="number" id="c6val" min="0" value="5">
+        <span class="crit-unit">족</span>
+        <select id="c6op"><option selected>이상</option><option>초과</option><option>이하</option><option>미만</option></select>
+      </div>
+      <div class="crit-note" id="c6note"></div>
+    </div>
+    <div class="crit-card">
+      <div class="crit-title">⑥ 최종 입고일</div>
+      <div class="crit-controls">
+        <input type="number" id="c1val" min="0" value="45">
+        <span class="crit-unit">일</span>
+        <select id="c1op"><option>이상</option><option>초과</option><option>이하</option><option>미만</option></select>
+      </div>
+      <div class="crit-note" id="c1note"></div>
+    </div>
+  </div>
+  <div class="crit-hint">값을 지우면 해당 기준은 적용되지 않습니다. ②는 ②번 파일, ⑤는 ⑤번 파일, ⑥은 ⑥번 파일이 있어야 계산됩니다. 계산 기준일은 이 페이지를 여는 시점의 날짜입니다.</div>
+</section>
+
+<section class="filters">
+  <div class="wrap">
+    <input type="text" id="searchInput" placeholder="브랜드 / 상품명 / 스타일 검색">
+    <div class="multiselect" id="brandFilter">
+      <button type="button" class="ms-btn" data-placeholder="브랜드 전체" disabled>브랜드 전체</button>
+      <div class="ms-panel"></div>
+    </div>
+    <div class="multiselect" id="catMajorFilter">
+      <button type="button" class="ms-btn" data-placeholder="대분류 전체" disabled>대분류 전체</button>
+      <div class="ms-panel"></div>
+    </div>
+    <div class="multiselect" id="catMidFilter">
+      <button type="button" class="ms-btn" data-placeholder="중분류 전체" disabled>중분류 전체</button>
+      <div class="ms-panel"></div>
+    </div>
+    <div class="multiselect" id="catSubFilter">
+      <button type="button" class="ms-btn" data-placeholder="소분류 전체" disabled>소분류 전체</button>
+      <div class="ms-panel"></div>
+    </div>
+    <label class="chk"><input type="checkbox" id="onlyAvailable" checked> 요청 가능한 상품만</label>
+    <div class="density-ctrl" id="densityCtrl">
+      <span class="density-label">간격</span>
+      <input type="range" id="densitySlider" min="0" max="100" value="35">
+    </div>
+    <span class="result-count" id="resultCount"></span>
+  </div>
+</section>
+
+<main>
+  <div id="reqBannerWrap"></div>
+  <div id="gridWrap"></div>
+</main>
+
+<button class="cart-fab" id="cartFab">
+  요청 목록 <span class="badge" id="cartBadge">0</span>
+</button>
+
+<div class="drawer-backdrop" id="drawerBackdrop"></div>
+<div class="drawer" id="drawer">
+  <div class="drawer-head">
+    <h2>요청 목록</h2>
+    <button id="drawerClose">✕</button>
+  </div>
+  <div class="drawer-body" id="drawerBody"></div>
+  <div class="drawer-foot">
+    <button class="btn-ghost" id="clearCart">전체 삭제</button>
+    <button class="btn-primary" id="exportBtn" disabled>점간이동 리스트 내보내기</button>
+  </div>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  // ---------------- state ----------------
+  const state = {
+    stockLoaded:false, warehouseLoaded:false, infoLoaded:false,
+    bestLoaded:false, shoeCardLoaded:false, detailLoaded:false,
+    stockRecords:[],
+    bestMap:new Map(), detailMap:new Map(),
+    shoeCardMap:new Map(),
+    bestKeys:new Set(), bestExcludedCount:0,
+    storeSizeSalesMap:new Map(), storeSizeSalesHasData:false,
+    storeProductSalesMap:new Map(),
+    warehouseMap:new Map(), warehouseHasData:false,
+    infoMap:new Map(), infoHasData:false, infoHasDate:false,
+    products:new Map(),
+    stores:new Set(), brands:new Set(), catMajors:new Set(), catMids:new Set(), catSubs:new Set(),
+    majorToMids:new Map(), midToSubs:new Map(),
+    selBrands:new Set(), selCatMajors:new Set(), selCatMids:new Set(), selCatSubs:new Set(),
+    requestStore:"",
+    cart:new Map(),
+    visibleCount:60,
+    openKey:null,
+    sortKey:null, sortDir:"desc"
+  };
+
+  const SEP = "\u241F";
+  const key2 = (a,b)=> (a||"").trim()+SEP+(b||"").trim();
+  const key3 = (a,b,c)=> (a||"").trim()+SEP+(b||"").trim()+SEP+(c||"").trim();
+  const key4 = (a,b,c,d)=> (a||"").trim()+SEP+(b||"").trim()+SEP+(c||"").trim()+SEP+(d||"").trim();
+
+  // 중분류 -> 대분류 매핑 (카테고리_분류.xlsx 기준, ABC마트 상품 분류 체계 전체).
+  // Best 상품판매분석처럼 중분류까지만 주는 파일에서도 대분류를 정확히 채우기 위해 사용한다.
+  const MID_TO_MAJOR = {
+    "BAG":"용품", "BUSINESS SHOES":"신발", "DESSERT":"FNB", "INSOLE":"용품", "KIDS":"신발",
+    "KIDS WEAR":"의류", "KNIT":"의류", "LADIESSHOES":"신발", "LEATHER CASUAL":"신발",
+    "OTHER PRODUCTS":"용품", "OTS":"용품", "PRODUCTS EXCEPT SHOES":"용품", "SANDAL":"신발",
+    "SHOE LACE":"용품", "SHOES CARE":"용품", "SOCKS":"용품", "SPORTS SHOES":"신발", "WOVEN":"의류"
+  };
+
+  function num(v){ if(v==null||v==="") return 0; const n = typeof v==="number" ? v : Number(String(v).replace(/,/g,"")); return isNaN(n)?0:n; }
+  function str(v){ return v==null ? "" : String(v).trim(); }
+  function fmtWon(n){ return Math.round(n).toLocaleString("ko-KR")+"원"; }
+  function fmtPct(n){ return Math.round(n*100)+"%"; }
+
+  function sizeCompare(a,b){
+    const na = parseInt(a,10), nb = parseInt(b,10);
+    const aNum = !isNaN(na) && /^\d+$/.test(a.trim());
+    const bNum = !isNaN(nb) && /^\d+$/.test(b.trim());
+    if(aNum && bNum) return na-nb;
+    if(aNum && !bNum) return -1;
+    if(!aNum && bNum) return 1;
+    return a.localeCompare(b,"ko");
+  }
+
+  function compareOp(value, op, threshold){
+    switch(op){
+      case "이상": return value >= threshold;
+      case "초과": return value > threshold;
+      case "이하": return value <= threshold;
+      case "미만": return value < threshold;
+      default: return true;
+    }
+  }
+
+  function parseDateFlexible(v){
+    if(v==null || v==="") return null;
+    if(v instanceof Date && !isNaN(v.getTime())) return v;
+    if(typeof v === "number" && v>0){
+      // Excel serial date (1900 date system)
+      const ms = Math.round((v - 25569) * 86400 * 1000);
+      const d = new Date(ms);
+      if(!isNaN(d.getTime())) return d;
+      return null;
+    }
+    const s = String(v).trim();
+    const m = s.match(/^(\d{4})[-.\/]?(\d{2})[-.\/]?(\d{2})/);
+    if(m){
+      const d = new Date(Number(m[1]), Number(m[2])-1, Number(m[3]));
+      if(!isNaN(d.getTime())) return d;
+    }
+    return null;
+  }
+
+  // ---------------- excel parsing ----------------
+  function detectHeader(rows){
+    const limit = Math.min(30, rows.length);
+    for(let i=0;i<limit;i++){
+      const row = rows[i];
+      if(!row) continue;
+      const c0 = row[0];
+      if(c0!=null && String(c0).trim().toUpperCase()==="NO"){
+        let headers = row.map(c=> c==null ? "" : String(c).trim());
+        let dataStart = i+1;
+        const catIdx = headers.indexOf("분류");
+        const next = rows[i+1];
+        if(catIdx>=0 && next){
+          // Some exports merge "분류" into 2 or 3 sub-columns (중/소분류, or 대/중/소분류)
+          // whose real labels live in the row directly below the header row.
+          const subLabels = [];
+          for(let c=catIdx; c<headers.length; c++){
+            const v = next[c];
+            if(v!=null && String(v).trim().slice(-2)==="분류"){
+              subLabels.push(String(v).trim());
+            }else{
+              break;
+            }
+          }
+          if(subLabels.length>=2){
+            for(let j=0;j<subLabels.length;j++){ headers[catIdx+j] = subLabels[j]; }
+            dataStart = i+2;
+          }
+        }
+        return {headers, dataStart};
+      }
+    }
+    return null;
+  }
+
+  function colIdx(headers, ...names){
+    for(const n of names){
+      const i = headers.indexOf(n);
+      if(i>=0) return i;
+    }
+    return -1;
+  }
+
+  // Some POS exports write a stale/incorrect <dimension> tag in the sheet XML
+  // (declared range far smaller than the real data). SheetJS trusts that tag
+  // when building sheet_to_json's default range, silently truncating real
+  // rows. Recompute the true used range from the actual cell addresses first.
+  function fixSheetRange(ws){
+    let maxR=0, maxC=0, seen=false;
+    for(const addr in ws){
+      if(addr.charCodeAt(0)===33) continue; // skip "!..." meta keys
+      const dec = XLSX.utils.decode_cell(addr);
+      if(dec.r>maxR) maxR=dec.r;
+      if(dec.c>maxC) maxC=dec.c;
+      seen = true;
+    }
+    if(seen) ws["!ref"] = XLSX.utils.encode_range({s:{r:0,c:0}, e:{r:maxR,c:maxC}});
+  }
+
+  function readWorkbookRows(file){
+    return new Promise((resolve,reject)=>{
+      const reader = new FileReader();
+      reader.onload = e=>{
+        try{
+          const data = new Uint8Array(e.target.result);
+          const wb = XLSX.read(data, {type:"array", cellDates:true});
+          const ws = wb.Sheets[wb.SheetNames[0]];
+          fixSheetRange(ws);
+          const rows = XLSX.utils.sheet_to_json(ws, {header:1, raw:true, defval:null});
+          resolve(rows);
+        }catch(err){ reject(err); }
+      };
+      reader.onerror = reject;
+      reader.readAsArrayBuffer(file);
+    });
+  }
+
+  async function processStockFiles(files, targetIsWarehouse){
+    let added = 0;
+    const newRecords = []; // 매장재고(비창고)일 때만 사용 — 호출한 쪽에서 기존 데이터와 병합한다
+    for(const file of files){
+      const rows = await readWorkbookRows(file);
+      const hd = detectHeader(rows);
+      if(!hd) continue;
+      const H = hd.headers;
+      const iStore = colIdx(H,"점");
+      const iStatus = colIdx(H,"점상태");
+      const iBrand = colIdx(H,"브랜드");
+      const iProduct = colIdx(H,"상품","상품명");
+      const iStyle = colIdx(H,"스타일");
+      const iOwnStyle = colIdx(H,"자사스타일");
+      const iColor = colIdx(H,"컬러");
+      const iSize = colIdx(H,"사이즈");
+      const iPrice = colIdx(H,"정상가");
+      const iStock = colIdx(H,"현재재고");
+      if(iStyle<0 || iColor<0 || iSize<0){ continue; }
+      for(let r=hd.dataStart; r<rows.length; r++){
+        const row = rows[r];
+        if(!row) continue;
+        const style = str(row[iStyle]);
+        if(!style) continue;
+        const rec = {
+          store: iStore>=0 ? str(row[iStore]) : "",
+          status: iStatus>=0 ? str(row[iStatus]) : "",
+          brand: iBrand>=0 ? str(row[iBrand]) : "",
+          product: iProduct>=0 ? str(row[iProduct]) : "",
+          style: style,
+          ownStyle: iOwnStyle>=0 ? str(row[iOwnStyle]) : "",
+          color: iColor>=0 ? str(row[iColor]) : "",
+          size: str(row[iSize]),
+          price: iPrice>=0 ? num(row[iPrice]) : 0,
+          stock: iStock>=0 ? num(row[iStock]) : 0
+        };
+        if(rec.status && rec.status.includes("폐점")) continue;
+        if(targetIsWarehouse){
+          if(rec.stock<=0) continue;
+          const k = key3(rec.style, rec.color, rec.size);
+          state.warehouseMap.set(k, (state.warehouseMap.get(k)||0)+rec.stock);
+          state.warehouseHasData = true;
+        }else{
+          newRecords.push(rec);
+        }
+        added++;
+      }
+    }
+    return { added, records: newRecords };
+  }
+
+  async function processShoeCardFiles(files){
+    let added = 0;
+    for(const file of files){
+      const rows = await readWorkbookRows(file);
+      const hd = detectHeader(rows);
+      if(!hd) continue;
+      const H = hd.headers;
+      const iStyle = colIdx(H,"스타일");
+      const iColor = colIdx(H,"컬러");
+      const iNormal = colIdx(H,"정상가");
+      const iSell = colIdx(H,"판매가");
+      const iDisc = colIdx(H,"감가율");
+      if(iStyle<0 || iColor<0 || iSell<0 || iDisc<0) continue;
+      for(let r=hd.dataStart; r<rows.length; r++){
+        const row = rows[r]; if(!row) continue;
+        const style = str(row[iStyle]); if(!style) continue;
+        const k = key2(style, str(row[iColor]));
+        let disc = iDisc>=0 ? num(row[iDisc]) : 0;
+        if(disc>1) disc = disc/100;
+        // Shoe Card는 매장 진열가 스냅샷으로, 정상가/판매가/감가율 표시의 기준으로 삼는다.
+        // 판매수량·분류 정보는 주지 않으므로 별도 맵(shoeCardMap)에만 저장하고,
+        // Best 상품판매분석/판매현황상세의 판매수량 데이터를 건드리지 않는다.
+        state.shoeCardMap.set(k, {
+          sellPrice: iSell>=0 ? num(row[iSell]) : num(row[iNormal]),
+          discountRate: disc
+        });
+        added++;
+      }
+    }
+    return added;
+  }
+
+  async function processBestFiles(files){
+    let added = 0;
+    for(const file of files){
+      const rows = await readWorkbookRows(file);
+      const hd = detectHeader(rows);
+      if(!hd) continue;
+      const H = hd.headers;
+      const iStyle = colIdx(H,"스타일");
+      const iColor = colIdx(H,"컬러");
+      const iQty = colIdx(H,"수량");
+      const iReal = colIdx(H,"실매출");
+      if(iStyle<0 || iColor<0 || iQty<0 || iReal<0) continue;
+      const iNormalRef = colIdx(H,"소비자가");
+      // Best 상품판매분석의 '중분류'/'소분류' 열은 실제 매장 분류 체계(대분류: 신발 등)의
+      // 중분류·소분류 단계에 해당한다 (스타일별 판매현황상세 파일 기준으로 확인).
+      const iCatMid = colIdx(H,"중분류");
+      const iCatSub = colIdx(H,"소분류");
+      const iRegionWh = colIdx(H,"창고재고");
+      for(let r=hd.dataStart; r<rows.length; r++){
+        const row = rows[r]; if(!row) continue;
+        const style = str(row[iStyle]); if(!style) continue;
+        const qty = iQty>=0 ? num(row[iQty]) : 0;
+        const real = iReal>=0 ? num(row[iReal]) : 0;
+        const normalRef = iNormalRef>=0 ? num(row[iNormalRef]) : 0;
+        const sellPrice = qty>0 ? real/qty : normalRef;
+        const discountRate = normalRef>0 ? Math.max(0, 1-(sellPrice/normalRef)) : 0;
+        const k = key2(style, str(row[iColor]));
+        const entry = {
+          sellPrice, discountRate, qty, hasQty:true,
+          catMajor: "",
+          catMid: iCatMid>=0 ? str(row[iCatMid]) : "",
+          catSub: iCatSub>=0 ? str(row[iCatSub]) : "",
+          regionWarehouse: iRegionWh>=0 ? num(row[iRegionWh]) : null
+        };
+        const existing = state.bestMap.get(k);
+        if(!existing || (existing.qty||0) < qty) state.bestMap.set(k, entry);
+        state.bestKeys.add(k);
+        added++;
+      }
+    }
+    return added;
+  }
+
+  async function processDetailFiles(files){
+    // 스타일별 판매현황상세: 거래(행) 단위 데이터. 매장+스타일+컬러+사이즈로 합산하고,
+    // 대/중/소분류가 모두 있어 가장 정확한 분류 정보를 제공한다.
+    let added = 0;
+    for(const file of files){
+      const rows = await readWorkbookRows(file);
+      const hd = detectHeader(rows);
+      if(!hd) continue;
+      const H = hd.headers;
+      const iStyle = colIdx(H,"스타일");
+      const iColor = colIdx(H,"컬러");
+      const iQtyTotal = colIdx(H,"수량(합계)");
+      const iSalesTotal = colIdx(H,"실매출(합계)");
+      if(iStyle<0 || iColor<0 || iQtyTotal<0 || iSalesTotal<0) continue;
+      const iStore = colIdx(H,"점");
+      const iSize = colIdx(H,"사이즈");
+      const iCatMajor = colIdx(H,"대분류");
+      const iCatMid = colIdx(H,"중분류");
+      const iCatSub = colIdx(H,"소분류");
+      const iUnitPrice = colIdx(H,"판매단가");
+      const productAgg = new Map();
+      for(let r=hd.dataStart; r<rows.length; r++){
+        const row = rows[r]; if(!row) continue;
+        const style = str(row[iStyle]); if(!style) continue;
+        const color = str(row[iColor]);
+        const k = key2(style, color);
+        const qty = iQtyTotal>=0 ? num(row[iQtyTotal]) : 0;
+        const sales = iSalesTotal>=0 ? num(row[iSalesTotal]) : 0;
+        const unitPrice = iUnitPrice>=0 ? num(row[iUnitPrice]) : 0;
+        let agg = productAgg.get(k);
+        if(!agg){ agg = {qty:0, sales:0, upSum:0, upCount:0, catMajor:"", catMid:"", catSub:""}; productAgg.set(k, agg); }
+        agg.qty += qty;
+        agg.sales += sales;
+        if(unitPrice>0){ agg.upSum += unitPrice; agg.upCount++; }
+        if(!agg.catMajor && iCatMajor>=0 && row[iCatMajor]) agg.catMajor = str(row[iCatMajor]);
+        if(!agg.catMid && iCatMid>=0 && row[iCatMid]) agg.catMid = str(row[iCatMid]);
+        if(!agg.catSub && iCatSub>=0 && row[iCatSub]) agg.catSub = str(row[iCatSub]);
+        if(iStore>=0 && iSize>=0 && qty>0){
+          const store = str(row[iStore]);
+          const size = str(row[iSize]);
+          if(store && size){
+            const sk = key4(store, style, color, size);
+            state.storeSizeSalesMap.set(sk, (state.storeSizeSalesMap.get(sk)||0)+qty);
+            state.storeSizeSalesHasData = true;
+            let byStore = state.storeProductSalesMap.get(store);
+            if(!byStore){ byStore = new Map(); state.storeProductSalesMap.set(store, byStore); }
+            byStore.set(k, (byStore.get(k)||0)+qty);
+          }
+        }
+        added++;
+      }
+      for(const [k, agg] of productAgg){
+        const normalRefApprox = agg.upCount>0 ? agg.upSum/agg.upCount : 0;
+        // 환불(반품)로 순수량이 음수가 될 수 있다 — "판매수량"은 순매출 개념이 아니라
+        // "몇 족 나갔는지"를 보는 지표이므로 0 미만은 0으로 표시한다(집계 자체는 그대로 둔다).
+        const qtyClamped = Math.max(0, agg.qty);
+        const sellPrice = qtyClamped>0 ? agg.sales/qtyClamped : normalRefApprox;
+        const discountRate = normalRefApprox>0 ? Math.max(0, 1-(sellPrice/normalRefApprox)) : 0;
+        const entry = {
+          sellPrice, discountRate, qty: qtyClamped, hasQty:true,
+          catMajor: agg.catMajor, catMid: agg.catMid, catSub: agg.catSub,
+          regionWarehouse: null
+        };
+        const existing = state.detailMap.get(k);
+        if(!existing || (existing.qty||0) < qtyClamped) state.detailMap.set(k, entry);
+      }
+    }
+    return added;
+  }
+
+  async function processInfoFiles(files){
+    let added = 0;
+    for(const file of files){
+      const rows = await readWorkbookRows(file);
+      const hd = detectHeader(rows);
+      if(!hd) continue;
+      const H = hd.headers;
+      const iStyle = colIdx(H,"스타일");
+      const iColor = colIdx(H,"컬러");
+      if(iStyle<0 || iColor<0) continue;
+      const iLastIn = H.findIndex(h=> h.indexOf("입고일")>=0);
+      const iMajor = colIdx(H,"대분류");
+      const iMid = colIdx(H,"중분류")>=0 ? colIdx(H,"중분류") : colIdx(H,"분류");
+      const iSub = colIdx(H,"소분류");
+      for(let r=hd.dataStart; r<rows.length; r++){
+        const row = rows[r]; if(!row) continue;
+        const style = str(row[iStyle]); if(!style) continue;
+        const k = key2(style, str(row[iColor]));
+        const entry = state.infoMap.get(k) || {};
+        if(iLastIn>=0){
+          const d = parseDateFlexible(row[iLastIn]);
+          if(d){ entry.lastInDate = d; state.infoHasDate = true; }
+        }
+        if(iMajor>=0 && row[iMajor]) entry.catMajor = str(row[iMajor]);
+        if(iMid>=0 && row[iMid]) entry.catMid = str(row[iMid]);
+        if(iSub>=0 && row[iSub]) entry.catSub = str(row[iSub]);
+        state.infoMap.set(k, entry);
+        added++;
+      }
+    }
+    if(added>0) state.infoHasData = true;
+    return added;
+  }
+
+  // ---------------- rebuild products ----------------
+  function rebuildProducts(){
+    state.products.clear();
+    state.stores.clear();
+    state.brands.clear();
+    state.catMajors.clear();
+    state.catMids.clear();
+    state.catSubs.clear();
+    state.majorToMids.clear();
+    state.midToSubs.clear();
+
+    const today0 = new Date();
+    today0.setHours(0,0,0,0);
+
+    for(const r of state.stockRecords){
+      if(r.store) state.stores.add(r.store);
+      const k = key2(r.style, r.color);
+      let p = state.products.get(k);
+      if(!p){
+        p = { brand:r.brand, product:r.product, style:r.style, ownStyle:r.ownStyle, color:r.color,
+              normalPrice:r.price, storeMap:new Map(), allSizes:new Set() };
+        state.products.set(k, p);
+      }
+      if(!p.normalPrice && r.price) p.normalPrice = r.price;
+      if(!p.brand && r.brand) p.brand = r.brand;
+      if(!p.product && r.product) p.product = r.product;
+      if(r.size) p.allSizes.add(r.size);
+      if(r.stock>0 && r.store){
+        let sm = p.storeMap.get(r.store);
+        if(!sm){ sm = new Map(); p.storeMap.set(r.store, sm); }
+        sm.set(r.size, (sm.get(r.size)||0)+r.stock);
+      }
+    }
+
+    // Best 상품판매분석 파일에 있는 상품(스타일+컬러)은 요청 대상에서 제외한다.
+    state.bestExcludedCount = 0;
+    for(const bk of state.bestKeys){
+      if(state.products.delete(bk)) state.bestExcludedCount++;
+    }
+
+    for(const [k,p] of state.products){
+      if(p.brand) state.brands.add(p.brand);
+
+      const bestPI = state.bestMap.get(k);
+      const detailPI = state.detailMap.get(k);
+      // Best와 판매현황상세가 둘 다 있으면 판매수량이 더 큰 쪽(더 넓은 조회기간으로 추정)을 사용한다.
+      const pi = (bestPI && detailPI) ? ((bestPI.qty||0) >= (detailPI.qty||0) ? bestPI : detailPI) : (bestPI || detailPI || null);
+      const sc = state.shoeCardMap.get(k);
+      // 정상가 대비 판매가/감가율은 Shoe Card(매장 진열가)를 우선 사용하고,
+      // Shoe Card가 없는 상품만 Best/판매현황상세에서 계산된 평균 판매가로 보충한다.
+      if(sc){
+        p.sellPrice = sc.sellPrice || p.normalPrice;
+        p.discountRate = sc.discountRate || 0;
+      }else if(pi){
+        p.sellPrice = pi.sellPrice || p.normalPrice;
+        p.discountRate = pi.discountRate || 0;
+      }else{
+        p.sellPrice = p.normalPrice;
+        p.discountRate = 0;
+      }
+      // 판매수량은 항상 Best/판매현황상세 기준(Shoe Card는 판매수량을 주지 않음).
+      if(pi){
+        p.qty = pi.hasQty ? pi.qty : null;
+        p.regionWarehouse = pi.regionWarehouse;
+      }else{
+        p.qty = null;
+        p.regionWarehouse = null;
+      }
+
+      const info = state.infoMap.get(k);
+      p.catMid = (info && info.catMid) || (pi && pi.catMid) || "";
+      p.catSub = (info && info.catSub) || (pi && pi.catSub) || "";
+      p.catMajor = (info && info.catMajor) || (pi && pi.catMajor) || MID_TO_MAJOR[p.catMid] || "";
+      if(p.catMajor) state.catMajors.add(p.catMajor);
+      if(p.catMid) state.catMids.add(p.catMid);
+      if(p.catSub) state.catSubs.add(p.catSub);
+      if(p.catMajor && p.catMid){
+        let mids = state.majorToMids.get(p.catMajor);
+        if(!mids){ mids = new Set(); state.majorToMids.set(p.catMajor, mids); }
+        mids.add(p.catMid);
+      }
+      if(p.catMid && p.catSub){
+        let subs = state.midToSubs.get(p.catMid);
+        if(!subs){ subs = new Set(); state.midToSubs.set(p.catMid, subs); }
+        subs.add(p.catSub);
+      }
+
+      p.lastInDate = (info && info.lastInDate) || null;
+      p.daysSinceIn = p.lastInDate ? Math.floor((today0 - new Date(p.lastInDate.getFullYear(),p.lastInDate.getMonth(),p.lastInDate.getDate()))/86400000) : null;
+
+      if(state.warehouseHasData){
+        let whTotal = 0; const whSizes = new Map();
+        const prefix = k+SEP;
+        for(const [wk,qty] of state.warehouseMap){
+          if(wk.indexOf(prefix)===0){
+            const size = wk.slice(prefix.length);
+            whSizes.set(size, qty);
+            whTotal += qty;
+          }
+        }
+        p.warehouseSizes = whSizes;
+        p.warehouseTotal = whTotal;
+      }else{
+        p.warehouseSizes = null;
+        p.warehouseTotal = p.regionWarehouse;
+      }
+    }
+  }
+
+  function categoryLabel(p){
+    return [p.catMajor, p.catMid, p.catSub].filter(Boolean).join(" · ");
+  }
+
+  // ---------------- UI: upload status ----------------
+  function setStatus(id, text, ok){
+    const el = document.getElementById(id);
+    el.innerHTML = '<span class="dot'+(ok?" ok":"")+'"></span>'+text;
+    el.className = "status"+(ok?" ok":"");
+  }
+
+  function resetStockData(){
+    state.stockRecords = [];
+    state.stockLoaded = false;
+    document.getElementById("fileStock").value = "";
+  }
+  function resetBestData(){
+    state.bestMap.clear();
+    state.bestKeys.clear();
+    state.bestExcludedCount = 0;
+    state.bestLoaded = false;
+    document.getElementById("fileBest").value = "";
+  }
+  function resetShoeCardData(){
+    state.shoeCardMap.clear();
+    state.shoeCardLoaded = false;
+    document.getElementById("fileShoeCard").value = "";
+  }
+  function resetDetailData(){
+    state.detailMap.clear();
+    state.storeSizeSalesMap.clear();
+    state.storeSizeSalesHasData = false;
+    state.storeProductSalesMap.clear();
+    state.detailLoaded = false;
+    document.getElementById("fileDetail").value = "";
+  }
+  function resetWarehouseData(){
+    state.warehouseMap.clear();
+    state.warehouseHasData = false;
+    state.warehouseLoaded = false;
+    document.getElementById("fileWarehouse").value = "";
+  }
+  function resetInfoData(){
+    state.infoMap.clear();
+    state.infoHasData = false;
+    state.infoHasDate = false;
+    state.infoLoaded = false;
+    document.getElementById("fileInfo").value = "";
+  }
+
+  document.getElementById("fileStock").addEventListener("change", async e=>{
+    const files = Array.from(e.target.files||[]);
+    if(!files.length) return;
+    setStatus("statusStock","불러오는 중...", false);
+    // 이번에 선택한 파일(들)에 들어있는 매장만 최신 데이터로 교체하고,
+    // 이전에 다른 시점에 업로드해둔 다른 매장의 데이터는 그대로 유지한다.
+    // (전체매장 파일 1개를 한 번에 올리는 경우뿐 아니라, 매장별로 나눠서
+    //  여러 번에 걸쳐 업로드하는 경우에도 누적되도록 하기 위함)
+    const { records: newRecords } = await processStockFiles(files, false);
+    const touchedStores = new Set(newRecords.map(r=>r.store).filter(Boolean));
+    state.stockRecords = state.stockRecords.filter(r=>!touchedStores.has(r.store));
+    state.stockRecords = state.stockRecords.concat(newRecords);
+    state.stockLoaded = true;
+    rebuildProducts();
+    setStatus("statusStock", state.stores.size+"개 매장 · "+state.products.size.toLocaleString("ko-KR")+"개 상품 인식", true);
+    document.getElementById("clearStock").hidden = false;
+    refreshStoreSelect();
+    refreshBrandSelect();
+    refreshCategorySelects();
+    render();
+    e.target.value = ""; // 같은 파일을 다시 선택해도 change가 항상 발생하도록
+  });
+
+  document.getElementById("fileBest").addEventListener("change", async e=>{
+    const files = Array.from(e.target.files||[]);
+    if(!files.length) return;
+    setStatus("statusBest","불러오는 중...", false);
+    state.bestMap.clear();
+    state.bestKeys.clear();
+    const added = await processBestFiles(files);
+    state.bestLoaded = true;
+    rebuildProducts();
+    const exMsg = state.bestExcludedCount>0 ? (" · 베스트 상품 "+state.bestExcludedCount.toLocaleString("ko-KR")+"개 목록에서 제외") : "";
+    setStatus("statusBest", files.length+"개 파일 반영됨"+(added===0?" (형식을 확인해 주세요)":exMsg), true);
+    document.getElementById("clearBest").hidden = false;
+    refreshBrandSelect();
+    refreshCategorySelects();
+    render();
+    e.target.value = "";
+  });
+
+  document.getElementById("fileShoeCard").addEventListener("change", async e=>{
+    const files = Array.from(e.target.files||[]);
+    if(!files.length) return;
+    setStatus("statusShoeCard","불러오는 중...", false);
+    state.shoeCardMap.clear();
+    const added = await processShoeCardFiles(files);
+    state.shoeCardLoaded = true;
+    rebuildProducts();
+    setStatus("statusShoeCard", files.length+"개 파일 반영됨"+(added===0?" (형식을 확인해 주세요)":""), true);
+    document.getElementById("clearShoeCard").hidden = false;
+    render();
+    e.target.value = "";
+  });
+
+  document.getElementById("fileDetail").addEventListener("change", async e=>{
+    const files = Array.from(e.target.files||[]);
+    if(!files.length) return;
+    setStatus("statusDetail","불러오는 중...", false);
+    state.detailMap.clear();
+    state.storeSizeSalesMap.clear();
+    state.storeSizeSalesHasData = false;
+    state.storeProductSalesMap.clear();
+    const added = await processDetailFiles(files);
+    state.detailLoaded = true;
+    rebuildProducts();
+    setStatus("statusDetail", files.length+"개 파일 반영됨"+(added===0?" (형식을 확인해 주세요)":""), true);
+    document.getElementById("clearDetail").hidden = false;
+    refreshBrandSelect();
+    refreshCategorySelects();
+    render();
+    e.target.value = "";
+  });
+
+  document.getElementById("fileWarehouse").addEventListener("change", async e=>{
+    const files = Array.from(e.target.files||[]);
+    if(!files.length) return;
+    setStatus("statusWarehouse","불러오는 중...", false);
+    state.warehouseMap.clear();
+    await processStockFiles(files, true);
+    state.warehouseLoaded = true;
+    rebuildProducts();
+    setStatus("statusWarehouse", files.length+"개 파일 반영됨", true);
+    document.getElementById("clearWarehouse").hidden = false;
+    render();
+    e.target.value = "";
+  });
+
+  document.getElementById("fileInfo").addEventListener("change", async e=>{
+    const files = Array.from(e.target.files||[]);
+    if(!files.length) return;
+    setStatus("statusInfo","불러오는 중...", false);
+    state.infoMap.clear();
+    await processInfoFiles(files);
+    state.infoLoaded = true;
+    rebuildProducts();
+    setStatus("statusInfo", files.length+"개 파일 반영됨"+(state.infoHasDate?"":" (최종입고일 열을 찾지 못했습니다)"), true);
+    document.getElementById("clearInfo").hidden = false;
+    refreshCategorySelects();
+    render();
+    e.target.value = "";
+  });
+
+
+  document.getElementById("clearStock").addEventListener("click", ()=>{
+    resetStockData();
+    rebuildProducts();
+    setStatus("statusStock","대기 중", false);
+    document.getElementById("clearStock").hidden = true;
+    refreshStoreSelect(); refreshBrandSelect(); refreshCategorySelects();
+    render();
+  });
+  document.getElementById("clearBest").addEventListener("click", ()=>{
+    resetBestData();
+    rebuildProducts();
+    setStatus("statusBest","미업로드", false);
+    document.getElementById("clearBest").hidden = true;
+    refreshBrandSelect(); refreshCategorySelects();
+    render();
+  });
+  document.getElementById("clearShoeCard").addEventListener("click", ()=>{
+    resetShoeCardData();
+    rebuildProducts();
+    setStatus("statusShoeCard","미업로드", false);
+    document.getElementById("clearShoeCard").hidden = true;
+    render();
+  });
+  document.getElementById("clearDetail").addEventListener("click", ()=>{
+    resetDetailData();
+    rebuildProducts();
+    setStatus("statusDetail","미업로드", false);
+    document.getElementById("clearDetail").hidden = true;
+    refreshBrandSelect(); refreshCategorySelects();
+    render();
+  });
+  document.getElementById("clearWarehouse").addEventListener("click", ()=>{
+    resetWarehouseData();
+    rebuildProducts();
+    setStatus("statusWarehouse","미업로드", false);
+    document.getElementById("clearWarehouse").hidden = true;
+    render();
+  });
+  document.getElementById("clearInfo").addEventListener("click", ()=>{
+    resetInfoData();
+    rebuildProducts();
+    setStatus("statusInfo","미업로드", false);
+    document.getElementById("clearInfo").hidden = true;
+    refreshCategorySelects();
+    render();
+  });
+
+  function refreshStoreSelect(){
+    const sel = document.getElementById("requestStore");
+    const stores = Array.from(state.stores).sort((a,b)=>a.localeCompare(b,"ko"));
+    const prev = sel.value;
+    sel.innerHTML = '<option value="">내 매장을 선택하세요</option>' +
+      stores.map(s=>'<option value="'+s+'">'+s+'</option>').join("");
+    sel.disabled = stores.length===0;
+    if(stores.includes(prev)){
+      sel.value = prev;
+    }else if(state.requestStore){
+      // 새로 올린 파일에 이전에 선택했던 매장이 더 이상 없으면, 화면(드롭다운)뿐 아니라
+      // 내부 상태도 함께 비워야 한다. 그렇지 않으면 드롭다운은 "선택 안 됨"으로 보이는데
+      // 실제 필터링·요청 기준 계산은 존재하지 않는 매장 기준으로 계속 동작하는 문제가 생긴다.
+      state.requestStore = "";
+      state.openKey = null;
+    }
+  }
+
+  // ---------------- multi-select (checkbox dropdown, searchable & cascading) ----------------
+  const MS_CONFIG = [
+    {id:"brandFilter", sourceKey:"brands", selKey:"selBrands", placeholder:"브랜드 전체"},
+    {id:"catMajorFilter", sourceKey:"catMajors", selKey:"selCatMajors", placeholder:"대분류 전체"},
+    {id:"catMidFilter", sourceKey:"catMids", selKey:"selCatMids", placeholder:"중분류 전체"},
+    {id:"catSubFilter", sourceKey:"catSubs", selKey:"selCatSubs", placeholder:"소분류 전체"}
+  ];
+  const msSearch = {}; // cfg.id -> 현재 입력한 검색어 (드롭다운을 다시 열어도 유지)
+
+  function getOptionsFor(cfg){
+    if(cfg.id==="catMidFilter"){
+      const majors = state.selCatMajors;
+      if(majors.size===0) return Array.from(state.catMids);
+      const set = new Set();
+      for(const maj of majors){
+        const mids = state.majorToMids.get(maj);
+        if(mids) for(const m of mids) set.add(m);
+      }
+      return Array.from(set);
+    }
+    if(cfg.id==="catSubFilter"){
+      const mids = state.selCatMids;
+      if(mids.size>0){
+        const set = new Set();
+        for(const mid of mids){
+          const subs = state.midToSubs.get(mid);
+          if(subs) for(const s of subs) set.add(s);
+        }
+        return Array.from(set);
+      }
+      const majors = state.selCatMajors;
+      if(majors.size>0){
+        const midSet = new Set();
+        for(const maj of majors){ const mids2 = state.majorToMids.get(maj); if(mids2) for(const m of mids2) midSet.add(m); }
+        const set = new Set();
+        for(const mid of midSet){ const subs = state.midToSubs.get(mid); if(subs) for(const s of subs) set.add(s); }
+        return Array.from(set);
+      }
+      return Array.from(state.catSubs);
+    }
+    return Array.from(state[cfg.sourceKey]);
+  }
+
+  function renderMultiSelect(cfg){
+    const root = document.getElementById(cfg.id);
+    const btn = root.querySelector(".ms-btn");
+    const panel = root.querySelector(".ms-panel");
+    const values = getOptionsFor(cfg).sort((a,b)=>a.localeCompare(b,"ko"));
+    const selected = state[cfg.selKey];
+    // 상위 분류 선택이 바뀌어 더 이상 유효하지 않은 선택값은 지운다
+    Array.from(selected).forEach(v=>{ if(!values.includes(v)) selected.delete(v); });
+
+    btn.disabled = values.length===0;
+    if(selected.size===0){
+      btn.textContent = cfg.placeholder;
+      btn.classList.remove("active-filter");
+    }else if(selected.size===1){
+      btn.textContent = Array.from(selected)[0];
+      btn.classList.add("active-filter");
+    }else{
+      btn.textContent = cfg.placeholder.replace("전체", "")+selected.size+"개 선택";
+      btn.classList.add("active-filter");
+    }
+
+    if(values.length===0){
+      panel.innerHTML = '<div class="ms-empty">선택 가능한 항목이 없습니다</div>';
+      return;
+    }
+
+    const q = (msSearch[cfg.id]||"").trim().toLowerCase();
+    const filteredValues = q ? values.filter(v=> v.toLowerCase().indexOf(q)>=0) : values;
+
+    let html = '<input type="text" class="ms-search" placeholder="검색..." value="'+esc(msSearch[cfg.id]||"")+'">';
+    html += '<div class="ms-options">';
+    if(filteredValues.length===0){
+      html += '<div class="ms-empty">일치하는 항목이 없습니다</div>';
+    }else{
+      for(const v of filteredValues){
+        const checked = selected.has(v) ? " checked" : "";
+        html += '<label class="ms-option"><input type="checkbox" value="'+esc(v)+'"'+checked+'><span>'+esc(v)+'</span></label>';
+      }
+    }
+    html += '</div>';
+    html += '<button type="button" class="ms-clear">전체 선택 해제</button>';
+    panel.innerHTML = html;
+
+    const searchInput = panel.querySelector(".ms-search");
+    searchInput.addEventListener("click", ev=> ev.stopPropagation());
+    searchInput.addEventListener("input", ()=>{
+      msSearch[cfg.id] = searchInput.value;
+      renderMultiSelect(cfg);
+      // 검색 중에는 열림 상태와 포커스를 유지한다
+      const reopened = document.getElementById(cfg.id);
+      reopened.classList.add("open");
+      const reInput = reopened.querySelector(".ms-search");
+      if(reInput){ reInput.focus(); reInput.setSelectionRange(reInput.value.length, reInput.value.length); }
+    });
+
+    panel.querySelectorAll('input[type=checkbox]').forEach(cb=>{
+      cb.addEventListener("change", ()=>{
+        if(cb.checked) selected.add(cb.value); else selected.delete(cb.value);
+        state.visibleCount = 60;
+        renderMultiSelect(cfg);
+        cascadeRefresh(cfg.id);
+        render();
+      });
+    });
+    const clearBtn = panel.querySelector(".ms-clear");
+    if(clearBtn) clearBtn.addEventListener("click", ()=>{
+      selected.clear();
+      state.visibleCount = 60;
+      renderMultiSelect(cfg);
+      cascadeRefresh(cfg.id);
+      render();
+    });
+  }
+
+  // 대분류가 바뀌면 중/소분류 선택지를, 중분류가 바뀌면 소분류 선택지를 다시 계산한다.
+  function cascadeRefresh(changedId){
+    if(changedId==="catMajorFilter"){
+      renderMultiSelect(MS_CONFIG[2]);
+      renderMultiSelect(MS_CONFIG[3]);
+    }else if(changedId==="catMidFilter"){
+      renderMultiSelect(MS_CONFIG[3]);
+    }
+  }
+
+  MS_CONFIG.forEach(cfg=>{
+    const root = document.getElementById(cfg.id);
+    root.querySelector(".ms-btn").addEventListener("click", ev=>{
+      ev.stopPropagation();
+      const willOpen = !root.classList.contains("open");
+      document.querySelectorAll(".multiselect.open").forEach(el=> el.classList.remove("open"));
+      if(willOpen){
+        root.classList.add("open");
+        const input = root.querySelector(".ms-search");
+        if(input) setTimeout(()=> input.focus(), 0);
+      }
+    });
+  });
+  document.addEventListener("click", ()=>{
+    document.querySelectorAll(".multiselect.open").forEach(el=> el.classList.remove("open"));
+  });
+
+  function refreshBrandSelect(){ renderMultiSelect(MS_CONFIG[0]); }
+  function refreshCategorySelects(){ renderMultiSelect(MS_CONFIG[1]); renderMultiSelect(MS_CONFIG[2]); renderMultiSelect(MS_CONFIG[3]); }
+
+  document.getElementById("requestStore").addEventListener("change", e=>{
+    state.requestStore = e.target.value;
+    state.openKey = null;
+    render();
+  });
+
+  let searchDebounce = null;
+  document.getElementById("searchInput").addEventListener("input", ()=>{
+    clearTimeout(searchDebounce);
+    searchDebounce = setTimeout(()=>{ state.visibleCount=60; render(); }, 180);
+  });
+  document.getElementById("onlyAvailable").addEventListener("change", ()=>{ state.visibleCount=60; render(); });
+
+  // 간격 슬라이더: 0~100 값을 gap 4~20px / padY 6~22px / padX 10~26px 로 선형 매핑한다.
+  const densitySlider = document.getElementById("densitySlider");
+  function applyDensity(v){
+    const t = v/100;
+    const gap = 4 + t*16;
+    const padY = 6 + t*16;
+    const padX = 10 + t*16;
+    const root = document.documentElement.style;
+    root.setProperty("--row-gap", gap.toFixed(1)+"px");
+    root.setProperty("--row-pad-y", padY.toFixed(1)+"px");
+    root.setProperty("--row-pad-x", padX.toFixed(1)+"px");
+  }
+  densitySlider.addEventListener("input", ()=> applyDensity(Number(densitySlider.value)));
+  applyDensity(Number(densitySlider.value));
+  ["c1val","c1op","c2val","c2op","c3val","c3op","c4val","c4op","c5val","c5op","c6val","c6op"].forEach(id=>{
+    document.getElementById(id).addEventListener("change", ()=>{ state.visibleCount=60; render(); });
+    document.getElementById(id).addEventListener("input", ()=>{ state.visibleCount=60; render(); });
+  });
+  document.getElementById("resetCriteria").addEventListener("click", ()=>{
+    ["c1val","c2val","c3val","c4val","c5val","c6val"].forEach(id=>{ document.getElementById(id).value=""; });
+    state.visibleCount = 60;
+    render();
+  });
+
+  // ---------------- filters & criteria ----------------
+  function getCriteria(){
+    function one(id){
+      const v = document.getElementById(id+"val").value;
+      return { active: v!=="", val: parseFloat(v), op: document.getElementById(id+"op").value };
+    }
+    return { c1:one("c1"), c2:one("c2"), c3:one("c3"), c4:one("c4"), c5:one("c5"), c6:one("c6") };
+  }
+
+  function getFilters(){
+    return {
+      search: document.getElementById("searchInput").value.trim().toLowerCase(),
+      brands: state.selBrands,
+      catMajors: state.selCatMajors,
+      catMids: state.selCatMids,
+      catSubs: state.selCatSubs,
+      onlyAvailable: document.getElementById("onlyAvailable").checked
+    };
+  }
+
+  function passProductLevel(p, filters, criteria){
+    if(filters.brands.size>0 && !filters.brands.has(p.brand)) return false;
+    if(filters.catMajors.size>0 && !filters.catMajors.has(p.catMajor)) return false;
+    if(filters.catMids.size>0 && !filters.catMids.has(p.catMid)) return false;
+    if(filters.catSubs.size>0 && !filters.catSubs.has(p.catSub)) return false;
+    if(filters.search){
+      const hay = (p.brand+" "+p.product+" "+p.style+" "+p.color).toLowerCase();
+      if(hay.indexOf(filters.search)===-1) return false;
+    }
+    if(criteria.c1.active && p.daysSinceIn!=null){
+      if(!compareOp(p.daysSinceIn, criteria.c1.op, criteria.c1.val)) return false;
+    }
+    if(criteria.c5.active){
+      const discPct = p.discountRate*100;
+      if(!compareOp(discPct, criteria.c5.op, criteria.c5.val)) return false;
+    }
+    if(criteria.c6.active){
+      const myQty = myStoreSalesQty(p, state.requestStore);
+      if(myQty!=null && !compareOp(myQty, criteria.c6.op, criteria.c6.val)) return false;
+    }
+    return true;
+  }
+
+  function otherStoresStock(p, requestStore){
+    const arr = [];
+    for(const [store, sizeMap] of p.storeMap){
+      if(store===requestStore) continue;
+      let total = 0;
+      for(const q of sizeMap.values()) total += q;
+      if(total>0) arr.push({store, total, sizes:sizeMap});
+    }
+    arr.sort((a,b)=> b.total-a.total);
+    return arr;
+  }
+
+  // 판매현황상세 파일이 있으면 "내 매장(요청 매장)"의 실제 판매수량을 돌려준다.
+  // 데이터가 아예 없으면 null(호출부에서 지역 합계로 대체), 데이터는 있지만
+  // 그 매장에서 이 상품이 안 팔렸으면 0을 돌려준다.
+  function myStoreSalesQty(p, requestStore){
+    if(!state.storeSizeSalesHasData || !requestStore) return null;
+    const byStore = state.storeProductSalesMap.get(requestStore);
+    if(!byStore) return 0;
+    const pk = key2(p.style, p.color);
+    return byStore.get(pk) || 0;
+  }
+
+  // 이 상품(스타일+컬러)에 대해 요청 목록(카트)에 이미 담긴 사이즈 개수 (매장 무관 합계).
+  function cartCountForProduct(p){
+    let count = 0;
+    for(const item of state.cart.values()){
+      if(item.requestStore===state.requestStore && item.style===p.style && item.color===p.color) count++;
+    }
+    return count;
+  }
+
+  // ---------------- list column sort ----------------
+  const SORT_COLUMNS = [
+    { key:"brand",  label:"브랜드",     cls:"h-brand" },
+    { key:"name",   label:"상품" },
+    { key:"normal", label:"정상가",     cls:"h-normal" },
+    { key:"sell",   label:"판매가" },
+    { key:"disc",   label:"감가율" },
+    { key:"qty",    label:"판매수량" },
+    { key:"other",  label:"상대매장재고", cls:"h-other" },
+    { key:"wh",     label:"창고재고",   cls:"h-wh" },
+    { key:null,     label:"" }
+  ];
+
+  function getSortValue(p, key){
+    switch(key){
+      case "brand": return p.brand || "";
+      case "name": return p.product || "";
+      case "normal": return p.normalPrice || 0;
+      case "sell": return p.sellPrice || 0;
+      case "disc": return p.discountRate || 0;
+      case "qty": { const my = myStoreSalesQty(p, state.requestStore); return my!=null ? my : -1; }
+      case "other": return p._otherTotal || 0;
+      case "wh": return p.warehouseTotal!=null ? p.warehouseTotal : -1;
+      default: return 0;
+    }
+  }
+
+  function renderSortHeader(col){
+    if(!col.key){
+      return '<span'+(col.cls?' class="'+col.cls+'"':'')+'>'+esc(col.label)+'</span>';
+    }
+    const active = state.sortKey===col.key;
+    const arrow = active ? (state.sortDir==="asc" ? "▲" : "▼") : "▲▼";
+    let cls = "sortable"+(col.cls?" "+col.cls:"")+(active?" active":"");
+    return '<span class="'+cls+'" data-sort-key="'+col.key+'">'+esc(col.label)+' <span class="arrow-ind">'+arrow+'</span></span>';
+  }
+
+  function rawOtherTotal(p, requestStore){
+    let total = 0;
+    for(const [store, sizeMap] of p.storeMap){
+      if(store===requestStore) continue;
+      for(const q of sizeMap.values()) total += q;
+    }
+    return total;
+  }
+
+  function getFilteredOthers(p, requestStore, criteria){
+    const raw = otherStoresStock(p, requestStore);
+    if(!criteria.c2.active && !criteria.c3.active && !criteria.c4.active) return raw;
+    const myStock = p.storeMap.get(requestStore) || new Map();
+    const k = key2(p.style, p.color);
+    const result = [];
+    for(const o of raw){
+      // ①번 기준: 그 매장 하나의 총재고(사이즈 합) 기준으로 매장을 통째로 거른다 (여러 매장 합계가 아님).
+      if(criteria.c2.active && !compareOp(o.total, criteria.c2.op, criteria.c2.val)) continue;
+      const sizes = new Map();
+      for(const [size, qty] of o.sizes){
+        if(criteria.c3.active && state.warehouseHasData){
+          const whQty = state.warehouseMap.get(key3(p.style,p.color,size)) || 0;
+          if(!compareOp(whQty, criteria.c3.op, criteria.c3.val)) continue;
+        }
+        if(criteria.c4.active){
+          const myQty = myStock.get(size) || 0;
+          if(!compareOp(myQty, criteria.c4.op, criteria.c4.val)) continue;
+        }
+        sizes.set(size, qty);
+      }
+      if(sizes.size>0){
+        let total=0; for(const q of sizes.values()) total+=q;
+        result.push({store:o.store, total, sizes});
+      }
+    }
+    return result;
+  }
+
+  // ---------------- rendering ----------------
+  function render(){
+    const banner = document.getElementById("reqBannerWrap");
+    const gridWrap = document.getElementById("gridWrap");
+
+    // criteria data-availability notes
+    document.getElementById("c1note").textContent = state.infoHasDate ? "" : (state.stockLoaded ? "⑥번 파일(최종입고일) 업로드 시 적용" : "");
+    document.getElementById("c3note").textContent = state.warehouseHasData ? "" : (state.stockLoaded ? "②번 파일(창고재고) 업로드 시 적용" : "");
+    document.getElementById("c6note").textContent = state.detailLoaded ? "" : (state.stockLoaded ? "⑤번 파일(판매현황상세) 업로드 시 적용" : "");
+
+    if(!state.stockLoaded){
+      banner.innerHTML = "";
+      gridWrap.innerHTML = '<div class="empty-state">먼저 <b>① 매장 재고 파일</b>을 업로드하면 상품 목록이 표시됩니다.</div>';
+      document.getElementById("resultCount").textContent = "";
+      updateCartUI();
+      return;
+    }
+    if(!state.requestStore){
+      banner.innerHTML = '<div class="req-banner">상단에서 <b>내 매장</b>을 선택하면 다른 매장의 재고를 확인할 수 있습니다.</div>';
+      gridWrap.innerHTML = '<div class="empty-state">내 매장을 선택해 주세요.</div>';
+      document.getElementById("resultCount").textContent = "";
+      updateCartUI();
+      return;
+    }
+    banner.innerHTML = "";
+
+    const filters = getFilters();
+    const criteria = getCriteria();
+
+    let list = [];
+    for(const [k,p] of state.products){
+      if(!passProductLevel(p, filters, criteria)) continue;
+      const filteredOthers = getFilteredOthers(p, state.requestStore, criteria);
+      if(filters.onlyAvailable && filteredOthers.length===0) continue;
+      p._filteredOthers = filteredOthers;
+      p._otherTotal = filteredOthers.reduce((s,o)=>s+o.total,0);
+      list.push([k,p]);
+    }
+
+    list.sort((a,b)=>{
+      const pa=a[1], pb=b[1];
+      if(state.sortKey){
+        const va = getSortValue(pa, state.sortKey);
+        const vb = getSortValue(pb, state.sortKey);
+        let cmp;
+        if(typeof va==="string") cmp = va.localeCompare(vb, "ko");
+        else cmp = va - vb;
+        return state.sortDir==="asc" ? cmp : -cmp;
+      }
+      if(pa.qty!=null && pb.qty!=null && pa.qty!==pb.qty) return pb.qty-pa.qty;
+      return pb._otherTotal - pa._otherTotal;
+    });
+
+    document.getElementById("resultCount").textContent = list.length.toLocaleString("ko-KR")+"개 상품";
+
+    if(list.length===0){
+      gridWrap.innerHTML = '<div class="empty-state">조건에 맞는 상품이 없습니다.<br>검색어나 필터, 요청 기준을 조정해 보세요.</div>';
+      updateCartUI();
+      return;
+    }
+
+    const shown = list.slice(0, state.visibleCount);
+    let html = '<div class="list">';
+    html += '<div class="list-head">' + SORT_COLUMNS.map(renderSortHeader).join("") + '</div>';
+    for(const [k,p] of shown){
+      html += renderRow(k,p);
+    }
+    html += '</div>';
+    if(list.length > state.visibleCount){
+      html += '<button class="more-btn" id="moreBtn">더 보기 ('+(list.length-state.visibleCount).toLocaleString("ko-KR")+'개 더)</button>';
+    }
+    gridWrap.innerHTML = html;
+
+    const moreBtn = document.getElementById("moreBtn");
+    if(moreBtn) moreBtn.addEventListener("click", ()=>{ state.visibleCount += 60; render(); });
+
+    gridWrap.querySelectorAll(".list-head .sortable").forEach(el=>{
+      el.addEventListener("click", ()=>{
+        const key = el.getAttribute("data-sort-key");
+        if(state.sortKey===key){
+          state.sortDir = state.sortDir==="asc" ? "desc" : "asc";
+        }else{
+          state.sortKey = key;
+          state.sortDir = (key==="name" || key==="brand") ? "asc" : "desc";
+        }
+        render();
+      });
+    });
+
+    gridWrap.querySelectorAll(".row").forEach(rowEl=>{
+      rowEl.addEventListener("click", ()=>{
+        const k = rowEl.getAttribute("data-key");
+        state.openKey = (state.openKey===k) ? null : k;
+        render();
+      });
+    });
+
+    gridWrap.querySelectorAll(".size-chip").forEach(chip=>{
+      chip.addEventListener("click", ev=>{
+        ev.stopPropagation();
+        const store = chip.getAttribute("data-store");
+        const size = chip.getAttribute("data-size");
+        const key = chip.getAttribute("data-pkey");
+        const qty = num(chip.getAttribute("data-qty"));
+        toggleCart(key, store, size, qty);
+      });
+    });
+
+    const closeBtn = gridWrap.querySelector(".close-panel");
+    if(closeBtn) closeBtn.addEventListener("click", ev=>{ ev.stopPropagation(); state.openKey=null; render(); });
+
+    updateCartUI();
+  }
+
+  function renderRow(k, p){
+    const isOpen = state.openKey===k;
+    const others = p._filteredOthers || [];
+    const otherTotal = p._otherTotal || 0;
+    const whTotal = p.warehouseTotal;
+
+    const myQty = myStoreSalesQty(p, state.requestStore);
+    const qtyText = myQty!=null ? myQty.toLocaleString("ko-KR")+"족" : "-";
+    const qtyLabel = "판매수량(내 매장)";
+    const whText = whTotal!=null ? whTotal.toLocaleString("ko-KR")+"족" : "-";
+    const catLabel = categoryLabel(p);
+    const hasDiscount = p.discountRate>0.001;
+    const normalText = fmtWon(p.normalPrice);
+    const sellText = fmtWon(p.sellPrice);
+    const discText = hasDiscount ? fmtPct(p.discountRate) : "0%";
+
+    const cartCount = cartCountForProduct(p);
+
+    let html = '<div class="item">';
+    html += '<div class="row'+(isOpen?' open':'')+'" data-key="'+k+'">';
+    html += '<div class="brand">'+esc(p.brand)+(catLabel?"<br>"+esc(catLabel):"")+'</div>';
+    html += '<div class="col-name"><div class="pname">'+esc(p.product)+(cartCount>0?' <span class="cart-badge">✓ '+cartCount+'족 담음</span>':'')+'</div><div class="style-color">'+esc(p.style)+' · '+esc(p.color)+'</div></div>';
+    html += '<div class="col-normal tabular'+(hasDiscount?" has-discount":"")+'">'+normalText+'</div>';
+    html += '<div class="col-sell tabular">'+sellText+'</div>';
+    html += '<div class="col-disc tabular'+(hasDiscount?" has-discount":"")+'">'+discText+'</div>';
+    html += '<div class="col-stat">'+qtyText+'<small>'+qtyLabel+'</small></div>';
+    html += '<div class="col-stat other">'+otherTotal.toLocaleString("ko-KR")+'족<small>상대매장재고</small></div>';
+    html += '<div class="col-stat wh">'+whText+'<small>창고재고</small></div>';
+    html += '<div class="arrow">›</div>';
+    html += '</div>';
+    if(isOpen){
+      html += renderPanel(k, p, others);
+    }
+    html += '</div>';
+    return html;
+  }
+
+  function renderPanel(k, p, others){
+    let html = '<div class="panel">';
+    html += renderMyStoreRef(p);
+    if(others.length===0){
+      html += '<div class="hint">현재 요청 기준에 맞는 다른 매장의 재고가 없습니다.</div>';
+    }else{
+      html += '<div class="hint">사이즈를 클릭하면 요청 목록에 담깁니다. (내 매장인 <b>'+esc(state.requestStore)+'</b> 제외, 요청 가능 매장 '+others.length+'곳)</div>';
+      for(const o of others){
+        const sizes = Array.from(o.sizes.keys()).sort(sizeCompare);
+        html += '<div class="store-row">';
+        html += '<div class="sname">'+esc(o.store)+'<span class="stotal">재고 '+o.total.toLocaleString("ko-KR")+'족</span></div>';
+        html += '<div class="sizes">';
+        for(const size of sizes){
+          const qty = o.sizes.get(size);
+          const cartKey = state.requestStore+SEP+o.store+SEP+p.style+SEP+p.color+SEP+size;
+          const selected = state.cart.has(cartKey);
+          html += '<div class="size-chip'+(selected?" selected":"")+'" data-pkey="'+k+'" data-store="'+esc(o.store)+'" data-size="'+esc(size)+'" data-qty="'+qty+'">';
+          if(selected) html += '<span class="chip-check">✓</span>';
+          html += '<span class="sz">'+esc(size)+'</span><span class="qty">재고 '+qty+'족</span>';
+          html += '</div>';
+        }
+        html += '</div></div>';
+      }
+    }
+    html += '<button class="close-panel">접기</button>';
+    html += '</div>';
+    return html;
+  }
+
+  // 요청 매장(내 매장) 자신의 이 상품 재고·판매수량을 패널 맨 위에 고정으로 보여준다.
+  // 다른 매장에서 어떤 사이즈를 요청할지 판단하는 기준이 되는 참고용 행이라 클릭은 안 된다.
+  function renderMyStoreRef(p){
+    if(!state.requestStore) return "";
+    const myStock = p.storeMap.get(state.requestStore) || new Map();
+    const myQty = myStoreSalesQty(p, state.requestStore);
+    const qtyText = myQty!=null ? myQty.toLocaleString("ko-KR")+"족" : "-";
+    const qtyLabel = "판매수량";
+    let html = '<div class="my-store-ref">';
+    html += '<div class="my-store-head"><span class="my-store-tag">내 매장</span> '+esc(state.requestStore)+
+      '<span class="my-store-sales">'+qtyLabel+' <b>'+qtyText+'</b></span></div>';
+    const allSizes = Array.from(p.allSizes||[]).sort(sizeCompare);
+    if(allSizes.length>0){
+      html += '<div class="sizes">';
+      for(const size of allSizes){
+        const qty = myStock.get(size) || 0;
+        const zeroCls = qty<=0 ? " zero-chip" : "";
+        html += '<div class="size-chip ref-chip'+zeroCls+'"><span class="sz">'+esc(size)+'</span><span class="qty">재고 '+qty+'족</span></div>';
+      }
+      html += '</div>';
+    }else{
+      html += '<div class="hint" style="margin:6px 0 0;">이 상품의 사이즈 정보를 찾을 수 없습니다.</div>';
+    }
+    html += '</div>';
+    return html;
+  }
+
+  function esc(s){
+    return String(s==null?"":s).replace(/[&<>"']/g, c=>({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
+  }
+
+  // ---------------- cart ----------------
+  function toggleCart(pkey, store, size, maxQty){
+    const p = state.products.get(pkey);
+    if(!p) return;
+    const cartKey = state.requestStore+SEP+store+SEP+p.style+SEP+p.color+SEP+size;
+    if(state.cart.has(cartKey)){
+      state.cart.delete(cartKey);
+    }else{
+      state.cart.set(cartKey, {
+        supplyStore:store, requestStore:state.requestStore,
+        brand:p.brand, product:p.product, style:p.style, color:p.color, size:size,
+        qty:1, maxQty:maxQty
+      });
+    }
+    render();
+  }
+
+  function updateCartUI(){
+    const badge = document.getElementById("cartBadge");
+    badge.textContent = state.cart.size;
+    document.getElementById("exportBtn").disabled = state.cart.size===0;
+    renderDrawer();
+  }
+
+  function renderDrawer(){
+    const body = document.getElementById("drawerBody");
+    if(state.cart.size===0){
+      body.innerHTML = '<div class="cart-empty">담긴 상품이 없습니다.<br>상품을 클릭해 사이즈를 선택해 보세요.</div>';
+      return;
+    }
+    const groups = new Map();
+    for(const [ck, item] of state.cart){
+      const gk = item.requestStore+SEP+item.supplyStore;
+      if(!groups.has(gk)) groups.set(gk, []);
+      groups.get(gk).push([ck,item]);
+    }
+    let html = "";
+    for(const [gk, items] of groups){
+      const first = items[0][1];
+      html += '<div class="cart-group"><div class="g-title">'+esc(first.supplyStore)+' → '+esc(first.requestStore)+'</div>';
+      for(const [ck, item] of items){
+        html += '<div class="cart-item" data-ck="'+ck+'">';
+        html += '<div class="ci-info"><div class="ci-name">'+esc(item.product)+'</div>';
+        html += '<div class="ci-sub">'+esc(item.style)+' · '+esc(item.color)+' · '+esc(item.size)+'</div></div>';
+        html += '<div class="stepper">';
+        html += '<button class="dec">−</button><span>'+item.qty+'</span><button class="inc">+</button>';
+        html += '</div>';
+        html += '<button class="ci-remove">✕</button>';
+        html += '</div>';
+      }
+      html += '</div>';
+    }
+    body.innerHTML = html;
+
+    body.querySelectorAll(".cart-item").forEach(row=>{
+      const ck = row.getAttribute("data-ck");
+      const item = state.cart.get(ck);
+      row.querySelector(".inc").addEventListener("click", ()=>{
+        if(item.qty < item.maxQty){ item.qty++; renderDrawer(); }
+      });
+      row.querySelector(".dec").addEventListener("click", ()=>{
+        if(item.qty>1){ item.qty--; renderDrawer(); }
+      });
+      row.querySelector(".ci-remove").addEventListener("click", ()=>{
+        state.cart.delete(ck);
+        updateCartUI();
+        render();
+      });
+    });
+  }
+
+  document.getElementById("cartFab").addEventListener("click", openDrawer);
+  document.getElementById("drawerClose").addEventListener("click", closeDrawer);
+  document.getElementById("drawerBackdrop").addEventListener("click", closeDrawer);
+  function openDrawer(){
+    document.getElementById("drawer").classList.add("show");
+    document.getElementById("drawerBackdrop").classList.add("show");
+  }
+  function closeDrawer(){
+    document.getElementById("drawer").classList.remove("show");
+    document.getElementById("drawerBackdrop").classList.remove("show");
+  }
+
+  document.getElementById("clearCart").addEventListener("click", ()=>{
+    if(state.cart.size===0) return;
+    if(!confirm("요청 목록을 모두 비울까요?")) return;
+    state.cart.clear();
+    updateCartUI();
+    render();
+  });
+
+  document.getElementById("exportBtn").addEventListener("click", exportExcel);
+  document.getElementById("exportLedgerBtn").addEventListener("click", exportLedger);
+
+  function fmtYMD(d){
+    const yy = String(d.getFullYear());
+    const mm = String(d.getMonth()+1).padStart(2,"0");
+    const dd = String(d.getDate()).padStart(2,"0");
+    return yy+"-"+mm+"-"+dd;
+  }
+
+  function exportLedger(){
+    if(!state.stockLoaded || state.products.size===0){
+      alert("먼저 ① 매장 재고 파일을 업로드해주세요.");
+      return;
+    }
+    const now = new Date();
+    const nowStr = fmtYMD(now)+" "+String(now.getHours()).padStart(2,"0")+":"+String(now.getMinutes()).padStart(2,"0");
+    // A~N: 매장명,브랜드,상품명,스타일코드,컬러,사이즈,현재재고,최종입고일,정상가,판매가,데이터기준일시,대분류,중분류,소분류
+    // ※ 판매수량은 별도 열(O)에 수동으로 추가해도 됩니다 (Code.gs가 O열을 읽음)
+    const header = ["매장명","브랜드","상품명","스타일코드","컬러","사이즈","현재재고","최종입고일","정상가","판매가","데이터기준일시","대분류","중분류","소분류"];
+    const aoa = [header];
+    // 화면에 적용된 필터·기준과 무관하게, 업로드된 전체 재고를 그대로 내보낸다
+    // (재고원장은 구글시트 쪽에서 요청 가능 여부를 판단하는 원본 데이터이기 때문).
+    for(const p of state.products.values()){
+      const lastIn = p.lastInDate ? fmtYMD(p.lastInDate) : "";
+      for(const [store, sizeMap] of p.storeMap){
+        for(const [size, qty] of sizeMap){
+          if(!(qty>0)) continue;
+          aoa.push([store, p.brand||"", p.product||"", p.style||"", p.color||"", size, qty, lastIn, p.normalPrice||"", p.sellPrice||"", nowStr, p.catMajor||"", p.catMid||"", p.catSub||""]);
+        }
+      }
+    }
+    if(aoa.length===1){
+      alert("내보낼 재고 데이터가 없습니다.");
+      return;
+    }
+    // 창고재고 행을 같은 시트에 포함 — 매장명을 【창고】로 표시해서 구분
+    if(state.warehouseHasData){
+      for(const [k, qty] of state.warehouseMap){
+        const parts = k.split(SEP);
+        if(parts.length===3 && qty>0){
+          aoa.push(["【창고】","","",parts[0],parts[1],parts[2],qty,"","","",nowStr,"","",""]);
+        }
+      }
+    }
+
+    const ws = XLSX.utils.aoa_to_sheet(aoa);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "재고원장");
+    const fname = fmtYMD(now).replace(/-/g,"")+"_재고원장.xlsx";
+    XLSX.writeFile(wb, fname);
+  }
+
+  function exportExcel(){
+    if(state.cart.size===0) return;
+    const groups = new Map();
+    const sizeSet = new Set();
+    for(const item of state.cart.values()){
+      const gk = [item.requestStore, item.supplyStore, item.brand, item.product, item.style, item.color].join(SEP);
+      if(!groups.has(gk)) groups.set(gk, { ...item, sizes:{} });
+      groups.get(gk).sizes[item.size] = (groups.get(gk).sizes[item.size]||0) + item.qty;
+      sizeSet.add(item.size);
+    }
+    const sizes = Array.from(sizeSet).sort(sizeCompare);
+    const header = ["점출매장","점입매장","브랜드","상품","스타일","컬러","총합계"].concat(sizes);
+    const aoa = [header];
+    for(const g of groups.values()){
+      let total = 0;
+      const row = [g.supplyStore, g.requestStore, g.brand, g.product, g.style, g.color, 0];
+      for(const size of sizes){
+        const q = g.sizes[size] || "";
+        row.push(q === "" ? "" : q);
+        if(q !== "") total += q;
+      }
+      row[6] = total;
+      aoa.push(row);
+    }
+    const ws = XLSX.utils.aoa_to_sheet(aoa);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "점간이동 리스트");
+    const d = new Date();
+    const yy = String(d.getFullYear()).slice(2);
+    const mm = String(d.getMonth()+1).padStart(2,"0");
+    const dd = String(d.getDate()).padStart(2,"0");
+    const fname = yy+mm+dd+"_"+state.requestStore+"_점간이동요청.xlsx";
+    XLSX.writeFile(wb, fname);
+  }
+
+  // initial
+  render();
+})();
+</script>
+</body>
+</html>
